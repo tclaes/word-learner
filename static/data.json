@@ -1,0 +1,13 @@
+{
+  "collections":[
+    {
+      "name": "French",
+      "words": [
+        {
+          "dutch": "in",
+          "translation": "dans"
+        }
+      ]
+    }
+  ]
+}
