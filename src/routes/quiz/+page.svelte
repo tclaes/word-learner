@@ -9,6 +9,7 @@
 	let totalAnswered = $state(0);
 	let feedback = $state('');
 	let usedWords = $state([]);
+	let quizDirection = $state('dutch-to-translation');
 
 	function selectCollection(collection) {
 		selectedCollection = collection;
@@ -59,7 +60,9 @@
 
 		totalAnswered++;
 
-		const correctAnswer = currentWord.translation.toLowerCase().trim();
+		const correctAnswer = quizDirection === 'dutch-to-translation'
+			? currentWord.translation.toLowerCase().trim()
+			: currentWord.dutch.toLowerCase().trim();
 		const userAnswerNormalized = userAnswer.toLowerCase().trim();
 
 		if (userAnswerNormalized === correctAnswer) {
@@ -80,6 +83,20 @@
 		if (event.key === 'Enter') {
 			checkAnswer();
 		}
+	}
+
+	function getQuestionWord() {
+		if (!currentWord) return '';
+		return quizDirection === 'dutch-to-translation' ? currentWord.dutch : currentWord.translation;
+	}
+
+	function getCorrectAnswer() {
+		if (!currentWord) return '';
+		return quizDirection === 'dutch-to-translation' ? currentWord.translation : currentWord.dutch;
+	}
+
+	function getQuestionLabel() {
+		return quizDirection === 'dutch-to-translation' ? 'Translate this word:' : 'Give the Dutch word for:';
 	}
 </script>
 
@@ -116,6 +133,27 @@
 			<p class="word-count">
 				{selectedCollection.words?.length || 0} word{selectedCollection.words?.length !== 1 ? 's' : ''}
 			</p>
+
+			<div class="direction-selection">
+				<label class="direction-label">Quiz Direction:</label>
+				<div class="direction-buttons">
+					<button
+						class="direction-btn"
+						class:active={quizDirection === 'dutch-to-translation'}
+						onclick={() => quizDirection = 'dutch-to-translation'}
+					>
+						Dutch → Translation
+					</button>
+					<button
+						class="direction-btn"
+						class:active={quizDirection === 'translation-to-dutch'}
+						onclick={() => quizDirection = 'translation-to-dutch'}
+					>
+						Translation → Dutch
+					</button>
+				</div>
+			</div>
+
 			<div class="button-group">
 				<button class="btn-secondary" onclick={() => (selectedCollection = null)}>
 					Choose Different Collection
@@ -141,8 +179,8 @@
 			{#if currentWord}
 				<div class="quiz-card" class:correct={feedback === 'correct'} class:incorrect={feedback === 'incorrect'}>
 					<div class="word-display">
-						<p class="label">Translate this word:</p>
-						<h2 class="dutch-word">{currentWord.dutch}</h2>
+						<p class="label">{getQuestionLabel()}</p>
+						<h2 class="dutch-word">{getQuestionWord()}</h2>
 					</div>
 
 					{#if feedback === ''}
@@ -166,7 +204,7 @@
 					{:else if feedback === 'incorrect'}
 						<div class="feedback incorrect-feedback">
 							<p class="icon">✗</p>
-							<p class="message">Incorrect. The answer was: <strong>{currentWord.translation}</strong></p>
+							<p class="message">Incorrect. The answer was: <strong>{getCorrectAnswer()}</strong></p>
 						</div>
 					{/if}
 				</div>
@@ -255,6 +293,51 @@
 		font-size: 1.1rem;
 		color: #666;
 		margin: 1rem 0;
+	}
+
+	.direction-selection {
+		margin: 2rem 0;
+	}
+
+	.direction-label {
+		display: block;
+		font-size: 1rem;
+		color: #333;
+		margin-bottom: 0.75rem;
+		font-weight: 500;
+	}
+
+	.direction-buttons {
+		display: flex;
+		gap: 0.75rem;
+		justify-content: center;
+	}
+
+	.direction-btn {
+		background: #f3f4f6;
+		color: #374151;
+		border: 2px solid #d1d5db;
+		padding: 0.75rem 1.5rem;
+		border-radius: 6px;
+		font-size: 0.95rem;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.direction-btn:hover {
+		background: #e5e7eb;
+		border-color: #9ca3af;
+	}
+
+	.direction-btn.active {
+		background: #2563eb;
+		color: white;
+		border-color: #2563eb;
+	}
+
+	.direction-btn.active:hover {
+		background: #1d4ed8;
+		border-color: #1d4ed8;
 	}
 
 	.button-group {
