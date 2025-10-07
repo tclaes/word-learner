@@ -6,10 +6,13 @@
 	let { data } = $props();
 
 	let showModal = $state(false);
+	let showAddWordsModal = $state(false);
 	let collectionName = $state('');
 	let wordPairs = $state([{ dutch: '', translation: '' }]);
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
+	let selectedCollectionForWords = $state(null);
+	let newWords = $state([{ dutch: '', translation: '' }]);
 
 	function openModal() {
 		showModal = true;
@@ -22,12 +25,32 @@
 		showModal = false;
 	}
 
+	function openAddWordsModal(collection) {
+		selectedCollectionForWords = collection;
+		newWords = [{ dutch: '', translation: '' }];
+		showAddWordsModal = true;
+		errorMessage = '';
+	}
+
+	function closeAddWordsModal() {
+		showAddWordsModal = false;
+		selectedCollectionForWords = null;
+	}
+
 	function addWordPair() {
 		wordPairs = [...wordPairs, { dutch: '', translation: '' }];
 	}
 
 	function removeWordPair(index) {
 		wordPairs = wordPairs.filter((_, i) => i !== index);
+	}
+
+	function addNewWordPair() {
+		newWords = [...newWords, { dutch: '', translation: '' }];
+	}
+
+	function removeNewWordPair(index) {
+		newWords = newWords.filter((_, i) => i !== index);
 	}
 
 	async function handleSubmit() {
@@ -76,6 +99,45 @@
 			isSubmitting = false;
 		}
 	}
+
+	async function handleAddWords() {
+		errorMessage = '';
+
+		if (!selectedCollectionForWords) {
+			errorMessage = 'No collection selected';
+			return;
+		}
+
+		const validWords = newWords.filter(pair => pair.dutch.trim() && pair.translation.trim());
+
+		if (validWords.length === 0) {
+			errorMessage = 'Please add at least one word pair';
+			return;
+		}
+
+		isSubmitting = true;
+
+		try {
+			const wordsToInsert = validWords.map(pair => ({
+				collection_id: selectedCollectionForWords.id,
+				dutch: pair.dutch.trim(),
+				translation: pair.translation.trim()
+			}));
+
+			const { error: wordsError } = await supabase
+				.from('words')
+				.insert(wordsToInsert);
+
+			if (wordsError) throw wordsError;
+
+			await invalidateAll();
+			closeAddWordsModal();
+		} catch (error) {
+			errorMessage = error.message || 'Failed to add words';
+		} finally {
+			isSubmitting = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -93,7 +155,12 @@
 		<div class="collections-grid">
 			{#each data.collections as collection}
 				<div class="collection-card">
-					<h2>{collection.name}</h2>
+					<div class="card-header">
+						<h2>{collection.name}</h2>
+						<button class="btn-add-words" onclick={() => openAddWordsModal(collection)} title="Add words">
+							+ Add Words
+						</button>
+					</div>
 					{#if collection.words && collection.words.length > 0}
 						<p class="word-count">{collection.words.length} word{collection.words.length !== 1 ? 's' : ''}</p>
 						<ul>
@@ -183,9 +250,69 @@
 	</div>
 {/if}
 
+{#if showAddWordsModal}
+	<div class="modal-overlay" onclick={closeAddWordsModal}>
+		<div class="modal" onclick={(e) => e.stopPropagation()}>
+			<div class="modal-header">
+				<h2>Add Words to {selectedCollectionForWords?.name}</h2>
+				<button class="btn-close" onclick={closeAddWordsModal}>&times;</button>
+			</div>
+
+			<form onsubmit={(e) => { e.preventDefault(); handleAddWords(); }}>
+				<div class="form-group">
+					<label>Word Pairs</label>
+					{#each newWords as pair, index}
+						<div class="word-pair">
+							<input
+								type="text"
+								bind:value={pair.dutch}
+								placeholder="Dutch word"
+								required
+							/>
+							<input
+								type="text"
+								bind:value={pair.translation}
+								placeholder="Translation"
+								required
+							/>
+							{#if newWords.length > 1}
+								<button
+									type="button"
+									class="btn-remove"
+									onclick={() => removeNewWordPair(index)}
+								>
+									Remove
+								</button>
+							{/if}
+						</div>
+					{/each}
+					<button type="button" class="btn-secondary" onclick={addNewWordPair}>
+						Add Word Pair
+					</button>
+				</div>
+
+				{#if errorMessage}
+					<p class="error">{errorMessage}</p>
+				{/if}
+
+				<div class="modal-actions">
+					<button type="button" class="btn-secondary" onclick={closeAddWordsModal} disabled={isSubmitting}>
+						Cancel
+					</button>
+					<button type="submit" class="btn-primary" disabled={isSubmitting}>
+						{isSubmitting ? 'Adding...' : 'Add Words'}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
+
 <style>
 	.container {
+		padding: 2rem;
 		max-width: 1200px;
+		margin: 0 auto;
 	}
 
 	.header {
@@ -259,10 +386,33 @@
 		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 	}
 
+	.card-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: 0.5rem;
+	}
+
 	h2 {
-		margin: 0 0 0.5rem 0;
+		margin: 0;
 		color: #333;
 		font-size: 1.5rem;
+	}
+
+	.btn-add-words {
+		background: #10b981;
+		color: white;
+		border: none;
+		padding: 0.5rem 0.75rem;
+		border-radius: 4px;
+		font-size: 0.875rem;
+		cursor: pointer;
+		transition: background 0.2s;
+		white-space: nowrap;
+	}
+
+	.btn-add-words:hover {
+		background: #059669;
 	}
 
 	.word-count {
