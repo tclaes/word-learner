@@ -7,12 +7,14 @@
 
 	let showModal = $state(false);
 	let showAddWordsModal = $state(false);
+	let showDeleteConfirm = $state(false);
 	let collectionName = $state('');
 	let wordPairs = $state([{ dutch: '', translation: '' }]);
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
 	let selectedCollectionForWords = $state(null);
 	let newWords = $state([{ dutch: '', translation: '' }]);
+	let collectionToDelete = $state(null);
 
 	function openModal() {
 		showModal = true;
@@ -138,6 +140,39 @@
 			isSubmitting = false;
 		}
 	}
+
+	function openDeleteConfirm(collection) {
+		collectionToDelete = collection;
+		showDeleteConfirm = true;
+	}
+
+	function closeDeleteConfirm() {
+		showDeleteConfirm = false;
+		collectionToDelete = null;
+	}
+
+	async function handleDelete() {
+		if (!collectionToDelete) return;
+
+		isSubmitting = true;
+		errorMessage = '';
+
+		try {
+			const { error } = await supabase
+				.from('collections')
+				.delete()
+				.eq('id', collectionToDelete.id);
+
+			if (error) throw error;
+
+			await invalidateAll();
+			closeDeleteConfirm();
+		} catch (error) {
+			errorMessage = error.message || 'Failed to delete collection';
+		} finally {
+			isSubmitting = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -157,9 +192,14 @@
 				<div class="collection-card">
 					<div class="card-header">
 						<h2>{collection.name}</h2>
-						<button class="btn-add-words" onclick={() => openAddWordsModal(collection)} title="Add words">
-							+ Add Words
-						</button>
+						<div class="card-actions">
+							<button class="btn-add-words" onclick={() => openAddWordsModal(collection)} title="Add words">
+								+ Add Words
+							</button>
+							<button class="btn-delete" onclick={() => openDeleteConfirm(collection)} title="Delete collection">
+								Delete
+							</button>
+						</div>
 					</div>
 					{#if collection.words && collection.words.length > 0}
 						<p class="word-count">{collection.words.length} word{collection.words.length !== 1 ? 's' : ''}</p>
@@ -308,6 +348,35 @@
 	</div>
 {/if}
 
+{#if showDeleteConfirm}
+	<div class="modal-overlay" onclick={closeDeleteConfirm}>
+		<div class="modal modal-small" onclick={(e) => e.stopPropagation()}>
+			<div class="modal-header">
+				<h2>Delete Collection?</h2>
+				<button class="btn-close" onclick={closeDeleteConfirm}>&times;</button>
+			</div>
+
+			<div class="modal-content">
+				<p>Are you sure you want to delete <strong>{collectionToDelete?.name}</strong>?</p>
+				<p class="warning-text">This will permanently delete the collection and all its words. This action cannot be undone.</p>
+
+				{#if errorMessage}
+					<p class="error">{errorMessage}</p>
+				{/if}
+			</div>
+
+			<div class="modal-actions">
+				<button class="btn-secondary" onclick={closeDeleteConfirm} disabled={isSubmitting}>
+					Cancel
+				</button>
+				<button class="btn-danger" onclick={handleDelete} disabled={isSubmitting}>
+					{isSubmitting ? 'Deleting...' : 'Delete Collection'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <style>
 	.container {
 		max-width: 1200px;
@@ -389,12 +458,20 @@
 		justify-content: space-between;
 		align-items: flex-start;
 		margin-bottom: 0.5rem;
+		gap: 1rem;
 	}
 
 	h2 {
 		margin: 0;
 		color: #333;
 		font-size: 1.5rem;
+		flex: 1;
+	}
+
+	.card-actions {
+		display: flex;
+		gap: 0.5rem;
+		flex-shrink: 0;
 	}
 
 	.btn-add-words {
@@ -411,6 +488,42 @@
 
 	.btn-add-words:hover {
 		background: #059669;
+	}
+
+	.btn-delete {
+		background: #ef4444;
+		color: white;
+		border: none;
+		padding: 0.5rem 0.75rem;
+		border-radius: 4px;
+		font-size: 0.875rem;
+		cursor: pointer;
+		transition: background 0.2s;
+		white-space: nowrap;
+	}
+
+	.btn-delete:hover {
+		background: #dc2626;
+	}
+
+	.btn-danger {
+		background: #ef4444;
+		color: white;
+		border: none;
+		padding: 0.75rem 1.5rem;
+		border-radius: 6px;
+		font-size: 1rem;
+		cursor: pointer;
+		transition: background 0.2s;
+	}
+
+	.btn-danger:hover:not(:disabled) {
+		background: #dc2626;
+	}
+
+	.btn-danger:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
 	.word-count {
@@ -460,6 +573,26 @@
 		max-height: 90vh;
 		overflow-y: auto;
 		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+	}
+
+	.modal-small {
+		max-width: 500px;
+	}
+
+	.modal-content {
+		margin-bottom: 1.5rem;
+	}
+
+	.modal-content p {
+		margin: 0.5rem 0;
+		color: #374151;
+	}
+
+	.warning-text {
+		color: #dc2626;
+		font-size: 0.95rem;
+		font-weight: 500;
+		margin-top: 1rem;
 	}
 
 	.modal-header {
