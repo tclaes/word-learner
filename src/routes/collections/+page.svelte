@@ -379,9 +379,7 @@
 
 <style>
 	.container {
-		padding: 2rem;
 		max-width: 1200px;
-		margin: 0 auto;
 	}
 
 	.header {
