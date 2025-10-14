@@ -76,9 +76,16 @@
 		isSubmitting = true;
 
 		try {
+			const { data: { user } } = await supabase.auth.getUser();
+
+			if (!user) {
+				errorMessage = 'You must be logged in to create collections';
+				return;
+			}
+
 			const { data: collection, error: collectionError } = await supabase
 				.from('collections')
-				.insert([{ name: collectionName.trim() }])
+				.insert([{ name: collectionName.trim(), user_id: user.id }])
 				.select()
 				.single();
 

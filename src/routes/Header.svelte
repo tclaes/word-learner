@@ -1,5 +1,6 @@
 <script>
 	import { page } from '$app/state';
+	import { user, signOut } from '$lib/stores/auth';
 </script>
 
 <header>
@@ -15,12 +16,14 @@
 			<li aria-current={page.url.pathname === '/' ? 'page' : undefined}>
 				<a href="/">Home</a>
 			</li>
-			<li aria-current={page.url.pathname === '/collections' ? 'page' : undefined}>
-				<a href="/collections">Collections</a>
-			</li>
-			<li aria-current={page.url.pathname === '/quiz' ? 'page' : undefined}>
-				<a href="/quiz">Quiz</a>
-			</li>
+			{#if $user}
+				<li aria-current={page.url.pathname === '/collections' ? 'page' : undefined}>
+					<a href="/collections">Collections</a>
+				</li>
+				<li aria-current={page.url.pathname === '/quiz' ? 'page' : undefined}>
+					<a href="/quiz">Quiz</a>
+				</li>
+			{/if}
 			<li aria-current={page.url.pathname === '/about' ? 'page' : undefined}>
 				<a href="/about">About</a>
 			</li>
@@ -30,8 +33,12 @@
 		</svg>
 	</nav>
 
-	<div class="corner">
-
+	<div class="corner auth-section">
+		{#if $user}
+			<button class="btn-signout" onclick={signOut}>Sign Out</button>
+		{:else}
+			<a href="/login" class="btn-login">Login</a>
+		{/if}
 	</div>
 </header>
 
@@ -46,18 +53,43 @@
 		height: 3em;
 	}
 
-	.corner a {
+	.auth-section {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 100%;
-		height: 100%;
+		width: auto;
+		padding: 0 1rem;
 	}
 
-	.corner img {
-		width: 2em;
-		height: 2em;
-		object-fit: contain;
+	.btn-login {
+		background: #2563eb;
+		color: white;
+		border: none;
+		padding: 0.5rem 1rem;
+		border-radius: 4px;
+		font-size: 0.875rem;
+		text-decoration: none;
+		cursor: pointer;
+		transition: background 0.2s;
+	}
+
+	.btn-login:hover {
+		background: #1d4ed8;
+	}
+
+	.btn-signout {
+		background: #ef4444;
+		color: white;
+		border: none;
+		padding: 0.5rem 1rem;
+		border-radius: 4px;
+		font-size: 0.875rem;
+		cursor: pointer;
+		transition: background 0.2s;
+	}
+
+	.btn-signout:hover {
+		background: #dc2626;
 	}
 
 	nav {

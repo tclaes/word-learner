@@ -1,9 +1,15 @@
 <script>
+	import { onMount } from 'svelte';
 	import Header from './Header.svelte';
 	import '../app.css';
+	import { initAuth } from '$lib/stores/auth';
 
 	/** @type {{children: import('svelte').Snippet, data: any}} */
 	let { children, data } = $props();
+
+	onMount(() => {
+		initAuth();
+	});
 </script>
 
 <div class="app">
