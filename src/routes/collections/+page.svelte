@@ -8,6 +8,7 @@
 	let showModal = $state(false);
 	let showAddWordsModal = $state(false);
 	let showDeleteConfirm = $state(false);
+	let showEditModal = $state(false);
 	let collectionName = $state('');
 	let wordPairs = $state([{ dutch: '', translation: '' }]);
 	let isSubmitting = $state(false);
@@ -15,6 +16,8 @@
 	let selectedCollectionForWords = $state(null);
 	let newWords = $state([{ dutch: '', translation: '' }]);
 	let collectionToDelete = $state(null);
+	let collectionToEdit = $state(null);
+	let editWords = $state([]);
 
 	function openModal() {
 		showModal = true;
@@ -173,6 +176,84 @@
 			isSubmitting = false;
 		}
 	}
+
+	function openEditModal(collection) {
+		collectionToEdit = collection;
+		collectionName = collection.name;
+		editWords = collection.words?.map(word => ({ ...word })) || [];
+		showEditModal = true;
+		errorMessage = '';
+	}
+
+	function closeEditModal() {
+		showEditModal = false;
+		collectionToEdit = null;
+		collectionName = '';
+		editWords = [];
+	}
+
+	function addEditWordPair() {
+		editWords = [...editWords, { dutch: '', translation: '' }];
+	}
+
+	function removeEditWordPair(index) {
+		editWords = editWords.filter((_, i) => i !== index);
+	}
+
+	async function handleEdit() {
+		if (!collectionToEdit) return;
+
+		errorMessage = '';
+
+		if (!collectionName.trim()) {
+			errorMessage = 'Please enter a collection name';
+			return;
+		}
+
+		const validWords = editWords.filter(word => word.dutch?.trim() && word.translation?.trim());
+
+		if (validWords.length === 0) {
+			errorMessage = 'Please add at least one word pair';
+			return;
+		}
+
+		isSubmitting = true;
+
+		try {
+			const { error: updateError } = await supabase
+				.from('collections')
+				.update({ name: collectionName.trim() })
+				.eq('id', collectionToEdit.id);
+
+			if (updateError) throw updateError;
+
+			const { error: deleteError } = await supabase
+				.from('words')
+				.delete()
+				.eq('collection_id', collectionToEdit.id);
+
+			if (deleteError) throw deleteError;
+
+			const wordsToInsert = validWords.map(word => ({
+				collection_id: collectionToEdit.id,
+				dutch: word.dutch.trim(),
+				translation: word.translation.trim()
+			}));
+
+			const { error: insertError } = await supabase
+				.from('words')
+				.insert(wordsToInsert);
+
+			if (insertError) throw insertError;
+
+			await invalidateAll();
+			closeEditModal();
+		} catch (error) {
+			errorMessage = error.message || 'Failed to update collection';
+		} finally {
+			isSubmitting = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -193,6 +274,9 @@
 					<div class="card-header">
 						<h2>{collection.name}</h2>
 						<div class="card-actions">
+							<button class="btn-edit" onclick={() => openEditModal(collection)} title="Edit collection">
+								Edit
+							</button>
 							<button class="btn-add-words" onclick={() => openAddWordsModal(collection)} title="Add words">
 								+ Add Words
 							</button>
@@ -377,9 +461,80 @@
 	</div>
 {/if}
 
+{#if showEditModal}
+	<div class="modal-overlay" onclick={closeEditModal}>
+		<div class="modal" onclick={(e) => e.stopPropagation()}>
+			<div class="modal-header">
+				<h2>Edit Collection</h2>
+				<button class="btn-close" onclick={closeEditModal}>&times;</button>
+			</div>
+
+			<form onsubmit={(e) => { e.preventDefault(); handleEdit(); }}>
+				<div class="form-group">
+					<label for="edit-collection-name">Collection Name</label>
+					<input
+						id="edit-collection-name"
+						type="text"
+						bind:value={collectionName}
+						placeholder="Enter collection name"
+						required
+					/>
+				</div>
+
+				<div class="form-group">
+					<label>Word Pairs</label>
+					{#each editWords as word, index}
+						<div class="word-pair">
+							<input
+								type="text"
+								bind:value={word.dutch}
+								placeholder="Dutch word"
+								required
+							/>
+							<input
+								type="text"
+								bind:value={word.translation}
+								placeholder="Translation"
+								required
+							/>
+							{#if editWords.length > 1}
+								<button
+									type="button"
+									class="btn-remove"
+									onclick={() => removeEditWordPair(index)}
+								>
+									Remove
+								</button>
+							{/if}
+						</div>
+					{/each}
+					<button type="button" class="btn-secondary" onclick={addEditWordPair}>
+						Add Word Pair
+					</button>
+				</div>
+
+				{#if errorMessage}
+					<p class="error">{errorMessage}</p>
+				{/if}
+
+				<div class="modal-actions">
+					<button type="button" class="btn-secondary" onclick={closeEditModal} disabled={isSubmitting}>
+						Cancel
+					</button>
+					<button type="submit" class="btn-primary" disabled={isSubmitting}>
+						{isSubmitting ? 'Updating...' : 'Update Collection'}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
+
 <style>
 	.container {
+		padding: 2rem;
 		max-width: 1200px;
+		margin: 0 auto;
 	}
 
 	.header {
@@ -488,6 +643,22 @@
 
 	.btn-add-words:hover {
 		background: #059669;
+	}
+
+	.btn-edit {
+		background: #3b82f6;
+		color: white;
+		border: none;
+		padding: 0.5rem 0.75rem;
+		border-radius: 4px;
+		font-size: 0.875rem;
+		cursor: pointer;
+		transition: background 0.2s;
+		white-space: nowrap;
+	}
+
+	.btn-edit:hover {
+		background: #2563eb;
 	}
 
 	.btn-delete {
