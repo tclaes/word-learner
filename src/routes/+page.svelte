@@ -9,24 +9,9 @@
 </svelte:head>
 
 <section>
-	<h1>Language word learner</h1>
+	<h1>Oefen nieuwe woorden</h1>
 
-	{#if data?.data?.collections}
-		{#each data.data.collections as collection}
-			<div class="collection">
-				<h2>{collection.name}</h2>
-				{#if collection.words && collection.words.length > 0}
-					<ul>
-						{#each collection.words as word}
-							<li>
-								<strong>{word.dutch}</strong> - {word.translation}
-							</li>
-						{/each}
-					</ul>
-				{/if}
-			</div>
-		{/each}
-	{/if}
+  <p>Maak een nieuwe collectie woorden en speel de quiz om de vertaling in te oefenen</p>
 </section>
 
 <style>
