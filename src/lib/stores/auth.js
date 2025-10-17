@@ -47,8 +47,12 @@ export async function signOut() {
 }
 
 export async function resetPasswordForEmail(email) {
+	const redirectUrl = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+		? `${window.location.origin}/reset-password`
+		: 'https://woorden-leren.netlify.app/reset-password';
+
 	const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-		redirectTo: `${window.location.origin}/reset-password`
+		redirectTo: redirectUrl
 	});
 
 	if (error) throw error;
