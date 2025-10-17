@@ -1,26 +1,27 @@
 <script>
-	import { signIn } from '$lib/stores/auth';
-	import { goto } from '$app/navigation';
+	import { resetPasswordForEmail } from '$lib/stores/auth';
 
 	let email = $state('');
-	let password = $state('');
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
+	let successMessage = $state('');
 
 	async function handleSubmit() {
-		if (!email.trim() || !password.trim()) {
-			errorMessage = 'Please enter both email and password';
+		if (!email.trim()) {
+			errorMessage = 'Please enter your email address';
 			return;
 		}
 
 		isSubmitting = true;
 		errorMessage = '';
+		successMessage = '';
 
 		try {
-			await signIn(email, password);
-			goto('/collections');
+			await resetPasswordForEmail(email);
+			successMessage = 'Password reset email sent! Check your inbox for the reset link.';
+			email = '';
 		} catch (error) {
-			errorMessage = error.message || 'Failed to sign in';
+			errorMessage = error.message || 'Failed to send reset email';
 		} finally {
 			isSubmitting = false;
 		}
@@ -28,13 +29,13 @@
 </script>
 
 <svelte:head>
-	<title>Login</title>
+	<title>Forgot Password</title>
 </svelte:head>
 
 <div class="container">
 	<div class="auth-card">
-		<h1>Sign In</h1>
-		<p class="subtitle">Sign in to access your collections and quizzes</p>
+		<h1>Reset Password</h1>
+		<p class="subtitle">Enter your email address and we'll send you a link to reset your password</p>
 
 		<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
 			<div class="form-group">
@@ -48,34 +49,22 @@
 				/>
 			</div>
 
-			<div class="form-group">
-				<label for="password">Password</label>
-				<input
-					id="password"
-					type="password"
-					bind:value={password}
-					placeholder="Enter your password"
-					required
-				/>
-			</div>
-
 			{#if errorMessage}
 				<p class="error">{errorMessage}</p>
 			{/if}
 
+			{#if successMessage}
+				<p class="success">{successMessage}</p>
+			{/if}
+
 			<button type="submit" class="btn-primary" disabled={isSubmitting}>
-				{isSubmitting ? 'Signing in...' : 'Sign In'}
+				{isSubmitting ? 'Sending...' : 'Send Reset Link'}
 			</button>
 		</form>
 
-		<div class="auth-links">
-			<p class="auth-link">
-				Don't have an account? <a href="/register">Create one</a>
-			</p>
-			<p class="auth-link">
-				<a href="/forgot-password">Forgot password?</a>
-			</p>
-		</div>
+		<p class="auth-link">
+			Remember your password? <a href="/login">Sign in</a>
+		</p>
 	</div>
 </div>
 
@@ -110,6 +99,7 @@
 		text-align: center;
 		margin: 0 0 2rem 0;
 		font-size: 0.95rem;
+		line-height: 1.5;
 	}
 
 	form {
@@ -154,6 +144,17 @@
 		text-align: center;
 	}
 
+	.success {
+		color: #10b981;
+		font-size: 0.9rem;
+		margin: 0;
+		padding: 0.75rem;
+		background: #d1fae5;
+		border-radius: 6px;
+		text-align: center;
+		line-height: 1.5;
+	}
+
 	.btn-primary {
 		background: #2563eb;
 		color: white;
@@ -175,15 +176,8 @@
 		cursor: not-allowed;
 	}
 
-	.auth-links {
-		margin-top: 1.5rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
 	.auth-link {
-		margin: 0;
+		margin: 1.5rem 0 0 0;
 		text-align: center;
 		color: #666;
 		font-size: 0.95rem;
