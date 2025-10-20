@@ -287,9 +287,6 @@
 							<button class="btn-add-words" onclick={() => openAddWordsModal(collection)} title="Add words">
 								+ Add Words
 							</button>
-							<button class="btn-delete" onclick={() => openDeleteConfirm(collection)} title="Delete collection">
-								Delete
-							</button>
 						</div>
 					</div>
 					{#if collection.words && collection.words.length > 0}
@@ -304,6 +301,9 @@
 					{:else}
 						<p class="empty">No words yet</p>
 					{/if}
+					<button class="btn-delete" onclick={() => openDeleteConfirm(collection)} title="Delete collection">
+						Delete
+					</button>
 				</div>
 			{/each}
 		</div>
@@ -549,6 +549,8 @@
 		justify-content: space-between;
 		align-items: center;
 		margin-bottom: 2rem;
+		gap: 1rem;
+		flex-wrap: wrap;
 	}
 
 	h1 {
@@ -621,6 +623,7 @@
 		align-items: flex-start;
 		margin-bottom: 0.5rem;
 		gap: 1rem;
+		flex-wrap: wrap;
 	}
 
 	h2 {
@@ -628,12 +631,15 @@
 		color: #333;
 		font-size: 1.5rem;
 		flex: 1;
+		min-width: 0;
+		word-wrap: break-word;
 	}
 
 	.card-actions {
 		display: flex;
 		gap: 0.5rem;
 		flex-shrink: 0;
+		flex-wrap: wrap;
 	}
 
 	.btn-add-words {
@@ -678,6 +684,8 @@
 		cursor: pointer;
 		transition: background 0.2s;
 		white-space: nowrap;
+		width: 100%;
+		margin-top: 1rem;
 	}
 
 	.btn-delete:hover {
@@ -836,6 +844,49 @@
 		gap: 0.5rem;
 		margin-bottom: 0.75rem;
 		align-items: center;
+	}
+
+	@media (max-width: 768px) {
+		.container {
+			padding: 1rem;
+		}
+
+		.header {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.header .btn-primary {
+			width: 100%;
+		}
+
+		.collections-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.card-header {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.card-actions {
+			width: 100%;
+			justify-content: stretch;
+		}
+
+		.btn-edit,
+		.btn-add-words {
+			flex: 1;
+		}
+
+		.word-pair {
+			grid-template-columns: 1fr;
+			gap: 0.75rem;
+		}
+
+		.btn-remove {
+			width: 100%;
+		}
 	}
 
 	.word-pair input {
