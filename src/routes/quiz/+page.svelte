@@ -1,8 +1,14 @@
 <script>
+	import { supabase } from '$lib/supabase';
+	import { user } from '$lib/stores/auth';
+	import { goto } from '$app/navigation';
+	import { onDestroy } from 'svelte';
+
 	let { data } = $props();
 
 	let selectedCollection = $state(null);
 	let quizStarted = $state(false);
+	let quizEnded = $state(false);
 	let currentWord = $state(null);
 	let userAnswer = $state('');
 	let score = $state(0);
@@ -10,10 +16,20 @@
 	let feedback = $state('');
 	let usedWords = $state([]);
 	let quizDirection = $state('dutch-to-translation');
+	let timeRemaining = $state(300);
+	let timerInterval = null;
+	let quizStartTime = $state(null);
+
+	onDestroy(() => {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+		}
+	});
 
 	function selectCollection(collection) {
 		selectedCollection = collection;
 		quizStarted = false;
+		quizEnded = false;
 		resetQuiz();
 	}
 
@@ -22,8 +38,24 @@
 			return;
 		}
 		quizStarted = true;
+		quizEnded = false;
 		resetQuiz();
+		quizStartTime = Date.now();
+		timeRemaining = 300;
+		startTimer();
 		nextWord();
+	}
+
+	function startTimer() {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+		}
+		timerInterval = setInterval(() => {
+			timeRemaining--;
+			if (timeRemaining <= 0) {
+				endQuiz();
+			}
+		}, 1000);
 	}
 
 	function resetQuiz() {
@@ -33,6 +65,11 @@
 		usedWords = [];
 		userAnswer = '';
 		currentWord = null;
+		timeRemaining = 300;
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
 	}
 
 	function nextWord() {
@@ -43,13 +80,12 @@
 		);
 
 		if (availableWords.length === 0) {
-			usedWords = [];
-			const randomIndex = Math.floor(Math.random() * selectedCollection.words.length);
-			currentWord = selectedCollection.words[randomIndex];
-		} else {
-			const randomIndex = Math.floor(Math.random() * availableWords.length);
-			currentWord = availableWords[randomIndex];
+			endQuiz();
+			return;
 		}
+
+		const randomIndex = Math.floor(Math.random() * availableWords.length);
+		currentWord = availableWords[randomIndex];
 
 		userAnswer = '';
 		feedback = '';
@@ -79,6 +115,44 @@
 		}, 1500);
 	}
 
+	async function endQuiz() {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+
+		quizStarted = false;
+		quizEnded = true;
+
+		const percentage = totalAnswered > 0 ? Math.round((score / totalAnswered) * 100) : 0;
+		const duration = quizStartTime ? Math.round((Date.now() - quizStartTime) / 1000) : 0;
+
+		await saveQuizResult(percentage, duration);
+	}
+
+	async function saveQuizResult(percentage, duration) {
+		if (!$user || !selectedCollection) return;
+
+		try {
+			const { error } = await supabase
+				.from('quiz_scores')
+				.insert({
+					user_id: $user.id,
+					collection_id: selectedCollection.id,
+					score: score,
+					total_questions: totalAnswered,
+					percentage: percentage,
+					duration_seconds: duration
+				});
+
+			if (error) {
+				console.error('Error saving quiz result:', error);
+			}
+		} catch (err) {
+			console.error('Error saving quiz result:', err);
+		}
+	}
+
 	function handleKeyPress(event) {
 		if (event.key === 'Enter') {
 			checkAnswer();
@@ -97,6 +171,26 @@
 
 	function getQuestionLabel() {
 		return quizDirection === 'dutch-to-translation' ? 'Translate this word:' : 'Give the Dutch word for:';
+	}
+
+	function formatTime(seconds) {
+		const mins = Math.floor(seconds / 60);
+		const secs = seconds % 60;
+		return `${mins}:${secs.toString().padStart(2, '0')}`;
+	}
+
+	function formatDuration(seconds) {
+		const mins = Math.floor(seconds / 60);
+		const secs = seconds % 60;
+		if (mins > 0) {
+			return `${mins}m ${secs}s`;
+		}
+		return `${secs}s`;
+	}
+
+	function restartQuiz() {
+		quizEnded = false;
+		startQuiz();
 	}
 </script>
 
@@ -126,6 +220,39 @@
 				<p class="empty">No collections available. Create a collection first.</p>
 			{/if}
 		</div>
+	{:else if quizEnded}
+		<div class="quiz-results">
+			<h2>Quiz Complete!</h2>
+			<div class="results-card">
+				<div class="result-item main-score">
+					<span class="result-label">Final Score</span>
+					<span class="result-value large">{score} / {totalAnswered}</span>
+				</div>
+				<div class="result-item">
+					<span class="result-label">Accuracy</span>
+					<span class="result-value">{totalAnswered > 0 ? Math.round((score / totalAnswered) * 100) : 0}%</span>
+				</div>
+				<div class="result-item">
+					<span class="result-label">Duration</span>
+					<span class="result-value">{formatDuration(quizStartTime ? Math.round((Date.now() - quizStartTime) / 1000) : 0)}</span>
+				</div>
+				<div class="result-item">
+					<span class="result-label">Collection</span>
+					<span class="result-value">{selectedCollection.name}</span>
+				</div>
+			</div>
+			<div class="button-group">
+				<button class="btn-secondary" onclick={() => { selectedCollection = null; quizEnded = false; }}>
+					Choose Different Collection
+				</button>
+				<button class="btn-primary" onclick={restartQuiz}>
+					Try Again
+				</button>
+				<button class="btn-primary" onclick={() => goto('/dashboard')}>
+					View All Results
+				</button>
+			</div>
+		</div>
 	{:else if !quizStarted}
 		<div class="quiz-setup">
 			<h2>Ready to start?</h2>
@@ -133,6 +260,7 @@
 			<p class="word-count">
 				{selectedCollection.words?.length || 0} word{selectedCollection.words?.length !== 1 ? 's' : ''}
 			</p>
+			<p class="quiz-info">The quiz will end after all words are tested or after 5 minutes.</p>
 
 			<div class="direction-selection">
 				<label class="direction-label">Quiz Direction:</label>
@@ -165,12 +293,20 @@
 		<div class="quiz-area">
 			<div class="score-board">
 				<div class="score-item">
-					<span class="label">Score:</span>
+					<span class="label">Time</span>
+					<span class="value" class:warning={timeRemaining < 60}>{formatTime(timeRemaining)}</span>
+				</div>
+				<div class="score-item">
+					<span class="label">Score</span>
 					<span class="value">{score} / {totalAnswered}</span>
+				</div>
+				<div class="score-item">
+					<span class="label">Progress</span>
+					<span class="value">{usedWords.length} / {selectedCollection.words?.length || 0}</span>
 				</div>
 				{#if totalAnswered > 0}
 					<div class="score-item">
-						<span class="label">Accuracy:</span>
+						<span class="label">Accuracy</span>
 						<span class="value">{Math.round((score / totalAnswered) * 100)}%</span>
 					</div>
 				{/if}
@@ -211,7 +347,7 @@
 			{/if}
 
 			<div class="quiz-actions">
-				<button class="btn-secondary" onclick={() => { quizStarted = false; resetQuiz(); }}>
+				<button class="btn-secondary" onclick={endQuiz}>
 					End Quiz
 				</button>
 			</div>
@@ -295,6 +431,13 @@
 		margin: 1rem 0;
 	}
 
+	.quiz-info {
+		font-size: 0.95rem;
+		color: #2563eb;
+		margin: 1rem 0;
+		font-style: italic;
+	}
+
 	.direction-selection {
 		margin: 2rem 0;
 	}
@@ -345,6 +488,7 @@
 		gap: 1rem;
 		justify-content: center;
 		margin-top: 2rem;
+		flex-wrap: wrap;
 	}
 
 	.btn-primary {
@@ -390,11 +534,12 @@
 	.score-board {
 		display: flex;
 		justify-content: center;
-		gap: 2rem;
+		gap: 1.5rem;
 		padding: 1.5rem;
 		background: #f8f9fa;
 		border-radius: 8px;
 		margin-bottom: 2rem;
+		flex-wrap: wrap;
 	}
 
 	.score-item {
@@ -413,6 +558,10 @@
 		font-size: 1.5rem;
 		font-weight: bold;
 		color: #2563eb;
+	}
+
+	.score-item .value.warning {
+		color: #ef4444;
 	}
 
 	.quiz-card {
@@ -505,6 +654,66 @@
 	.quiz-actions {
 		margin-top: 2rem;
 		text-align: center;
+	}
+
+	.quiz-results {
+		text-align: center;
+		padding: 2rem;
+		background: #fff;
+		border-radius: 12px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	}
+
+	.quiz-results h2 {
+		color: #333;
+		margin-bottom: 2rem;
+		font-size: 2rem;
+	}
+
+	.results-card {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 1.5rem;
+		margin: 2rem 0;
+	}
+
+	.result-item {
+		padding: 1.5rem;
+		background: #f8f9fa;
+		border-radius: 8px;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.result-item.main-score {
+		grid-column: 1 / -1;
+		background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+		color: white;
+	}
+
+	.result-label {
+		font-size: 0.9rem;
+		color: #666;
+		font-weight: 500;
+	}
+
+	.main-score .result-label {
+		color: rgba(255, 255, 255, 0.9);
+	}
+
+	.result-value {
+		font-size: 1.5rem;
+		font-weight: bold;
+		color: #333;
+	}
+
+	.result-value.large {
+		font-size: 2.5rem;
+	}
+
+	.main-score .result-value {
+		color: white;
 	}
 
 	.empty {
