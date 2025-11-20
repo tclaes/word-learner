@@ -264,8 +264,8 @@
 </script>
 
 <svelte:head>
-	<title>Collections</title>
-	<meta name="description" content="Added collections" />
+	<title>My Collections - VocabMaster</title>
+	<meta name="description" content="Manage your vocabulary collections" />
 </svelte:head>
 
 <div class="container">
@@ -539,58 +539,67 @@
 
 <style>
 	.container {
-		padding: 2rem;
+		padding: 3rem 2rem;
 		max-width: 1200px;
 		margin: 0 auto;
+		min-height: calc(100vh - 200px);
 	}
 
 	.header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: 2rem;
+		margin-bottom: 3rem;
 		gap: 1rem;
 		flex-wrap: wrap;
 	}
 
 	h1 {
 		margin: 0;
-		color: #333;
+		color: #1f2937;
+		font-size: 2.5rem;
+		font-weight: 800;
 	}
 
 	.btn-primary {
-		background: #2563eb;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
 		border: none;
-		padding: 0.75rem 1.5rem;
-		border-radius: 6px;
+		padding: 0.875rem 1.75rem;
+		border-radius: 8px;
 		font-size: 1rem;
+		font-weight: 700;
 		cursor: pointer;
-		transition: background 0.2s;
+		transition: all 0.3s;
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 	}
 
 	.btn-primary:hover:not(:disabled) {
-		background: #1d4ed8;
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 	}
 
 	.btn-primary:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
+		transform: none;
 	}
 
 	.btn-secondary {
 		background: #f3f4f6;
 		color: #374151;
-		border: 1px solid #d1d5db;
+		border: 2px solid #e5e7eb;
 		padding: 0.75rem 1.5rem;
-		border-radius: 6px;
+		border-radius: 8px;
 		font-size: 1rem;
+		font-weight: 600;
 		cursor: pointer;
-		transition: background 0.2s;
+		transition: all 0.2s;
 	}
 
 	.btn-secondary:hover:not(:disabled) {
 		background: #e5e7eb;
+		border-color: #d1d5db;
 	}
 
 	.btn-secondary:disabled {
@@ -600,21 +609,23 @@
 
 	.collections-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-		gap: 1.5rem;
+		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+		gap: 2rem;
 	}
 
 	.collection-card {
-		background: #fff;
-		border: 1px solid #e0e0e0;
-		border-radius: 8px;
-		padding: 1.5rem;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-		transition: box-shadow 0.2s;
+		background: white;
+		border: 2px solid #e5e7eb;
+		border-radius: 16px;
+		padding: 2rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+		transition: all 0.3s;
 	}
 
 	.collection-card:hover {
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+		transform: translateY(-4px);
+		box-shadow: 0 12px 24px rgba(102, 126, 234, 0.15);
+		border-color: #667eea;
 	}
 
 	.card-header {
@@ -628,8 +639,9 @@
 
 	h2 {
 		margin: 0;
-		color: #333;
+		color: #1f2937;
 		font-size: 1.5rem;
+		font-weight: 700;
 		flex: 1;
 		min-width: 0;
 		word-wrap: break-word;
@@ -752,13 +764,13 @@
 
 	.modal {
 		background: white;
-		border-radius: 12px;
-		padding: 2rem;
+		border-radius: 16px;
+		padding: 2.5rem;
 		max-width: 600px;
 		width: 90%;
 		max-height: 90vh;
 		overflow-y: auto;
-		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 	}
 
 	.modal-small {
@@ -825,17 +837,24 @@
 
 	.form-group input {
 		width: 100%;
-		padding: 0.75rem;
-		border: 1px solid #d1d5db;
-		border-radius: 6px;
+		padding: 0.875rem 1rem;
+		border: 2px solid #e5e7eb;
+		border-radius: 8px;
 		font-size: 1rem;
 		box-sizing: border-box;
+		background: #f9fafb;
+		transition: all 0.2s;
+	}
+
+	.form-group input:hover {
+		border-color: #d1d5db;
 	}
 
 	.form-group input:focus {
 		outline: none;
-		border-color: #2563eb;
-		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+		border-color: #667eea;
+		box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+		background: white;
 	}
 
 	.word-pair {
@@ -890,16 +909,23 @@
 	}
 
 	.word-pair input {
-		padding: 0.75rem;
-		border: 1px solid #d1d5db;
-		border-radius: 6px;
+		padding: 0.875rem 1rem;
+		border: 2px solid #e5e7eb;
+		border-radius: 8px;
 		font-size: 0.9rem;
+		background: #f9fafb;
+		transition: all 0.2s;
+	}
+
+	.word-pair input:hover {
+		border-color: #d1d5db;
 	}
 
 	.word-pair input:focus {
 		outline: none;
-		border-color: #2563eb;
-		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+		border-color: #667eea;
+		box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+		background: white;
 	}
 
 	.btn-remove {

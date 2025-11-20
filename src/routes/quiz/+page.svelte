@@ -195,8 +195,8 @@
 </script>
 
 <svelte:head>
-	<title>Quiz</title>
-	<meta name="description" content="Test your vocabulary" />
+	<title>Practice Quiz - VocabMaster</title>
+	<meta name="description" content="Test your vocabulary knowledge with interactive quizzes" />
 </svelte:head>
 
 <div class="container">
@@ -357,15 +357,18 @@
 
 <style>
 	.container {
-		padding: 2rem;
+		padding: 3rem 2rem;
 		max-width: 900px;
 		margin: 0 auto;
+		min-height: calc(100vh - 200px);
 	}
 
 	h1 {
 		text-align: center;
-		color: #333;
-		margin-bottom: 2rem;
+		color: #1f2937;
+		font-size: 2.5rem;
+		font-weight: 800;
+		margin-bottom: 3rem;
 	}
 
 	.collection-selection {
@@ -373,8 +376,10 @@
 	}
 
 	.collection-selection h2 {
-		color: #333;
-		margin-bottom: 1.5rem;
+		color: #1f2937;
+		font-size: 1.875rem;
+		font-weight: 700;
+		margin-bottom: 2rem;
 	}
 
 	.collections-grid {
@@ -385,19 +390,19 @@
 	}
 
 	.collection-card {
-		background: #fff;
-		border: 2px solid #e0e0e0;
-		border-radius: 8px;
-		padding: 1.5rem;
+		background: white;
+		border: 2px solid #e5e7eb;
+		border-radius: 16px;
+		padding: 2rem;
 		cursor: pointer;
-		transition: all 0.2s;
+		transition: all 0.3s;
 		text-align: center;
 	}
 
 	.collection-card:hover {
-		border-color: #2563eb;
-		box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
-		transform: translateY(-2px);
+		border-color: #667eea;
+		box-shadow: 0 12px 24px rgba(102, 126, 234, 0.15);
+		transform: translateY(-4px);
 	}
 
 	.collection-card h3 {
@@ -414,15 +419,17 @@
 
 	.quiz-setup {
 		text-align: center;
-		padding: 2rem;
-		background: #fff;
-		border-radius: 12px;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		padding: 3rem;
+		background: white;
+		border-radius: 16px;
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 	}
 
 	.quiz-setup h2 {
-		color: #333;
-		margin-bottom: 1rem;
+		color: #1f2937;
+		font-size: 1.875rem;
+		font-weight: 700;
+		margin-bottom: 1.5rem;
 	}
 
 	.collection-name {
@@ -492,38 +499,44 @@
 	}
 
 	.btn-primary {
-		background: #2563eb;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
 		border: none;
-		padding: 0.75rem 1.5rem;
-		border-radius: 6px;
+		padding: 0.875rem 1.75rem;
+		border-radius: 8px;
 		font-size: 1rem;
+		font-weight: 700;
 		cursor: pointer;
-		transition: background 0.2s;
+		transition: all 0.3s;
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 	}
 
 	.btn-primary:hover:not(:disabled) {
-		background: #1d4ed8;
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 	}
 
 	.btn-primary:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
+		transform: none;
 	}
 
 	.btn-secondary {
 		background: #f3f4f6;
 		color: #374151;
-		border: 1px solid #d1d5db;
+		border: 2px solid #e5e7eb;
 		padding: 0.75rem 1.5rem;
-		border-radius: 6px;
+		border-radius: 8px;
 		font-size: 1rem;
+		font-weight: 600;
 		cursor: pointer;
-		transition: background 0.2s;
+		transition: all 0.2s;
 	}
 
 	.btn-secondary:hover {
 		background: #e5e7eb;
+		border-color: #d1d5db;
 	}
 
 	.quiz-area {
@@ -565,21 +578,21 @@
 	}
 
 	.quiz-card {
-		background: #fff;
-		border-radius: 12px;
-		padding: 2rem;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+		background: white;
+		border-radius: 16px;
+		padding: 3rem;
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 		transition: all 0.3s;
 	}
 
 	.quiz-card.correct {
 		border: 3px solid #10b981;
-		background: #f0fdf4;
+		background: linear-gradient(135deg, #f0fdf4 0%, #d1fae5 100%);
 	}
 
 	.quiz-card.incorrect {
 		border: 3px solid #ef4444;
-		background: #fef2f2;
+		background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
 	}
 
 	.word-display {
@@ -658,16 +671,17 @@
 
 	.quiz-results {
 		text-align: center;
-		padding: 2rem;
-		background: #fff;
-		border-radius: 12px;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		padding: 3rem;
+		background: white;
+		border-radius: 16px;
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 	}
 
 	.quiz-results h2 {
-		color: #333;
+		color: #1f2937;
 		margin-bottom: 2rem;
-		font-size: 2rem;
+		font-size: 2.25rem;
+		font-weight: 800;
 	}
 
 	.results-card {
@@ -688,8 +702,9 @@
 
 	.result-item.main-score {
 		grid-column: 1 / -1;
-		background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
+		box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
 	}
 
 	.result-label {

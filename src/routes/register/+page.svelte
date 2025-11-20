@@ -44,17 +44,19 @@
 </script>
 
 <svelte:head>
-	<title>Register</title>
+	<title>Create Account - VocabMaster</title>
 </svelte:head>
 
-<div class="container">
-	<div class="auth-card">
-		<h1>Create Account</h1>
-		<p class="subtitle">Sign up to start managing your vocabulary collections</p>
+<div class="auth-page">
+	<div class="auth-container">
+		<div class="auth-header">
+			<h1>Start Learning Today</h1>
+			<p class="subtitle">Create your account and begin mastering new vocabulary</p>
+		</div>
 
-		<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+		<form class="auth-form" onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
 			<div class="form-group">
-				<label for="email">Email</label>
+				<label for="email">Email Address</label>
 				<input
 					id="email"
 					type="email"
@@ -87,61 +89,68 @@
 			</div>
 
 			{#if errorMessage}
-				<p class="error">{errorMessage}</p>
+				<div class="alert alert-error">{errorMessage}</div>
 			{/if}
 
 			{#if successMessage}
-				<p class="success">{successMessage}</p>
+				<div class="alert alert-success">{successMessage}</div>
 			{/if}
 
-			<button type="submit" class="btn-primary" disabled={isSubmitting}>
+			<button type="submit" class="btn-primary btn-large" disabled={isSubmitting}>
 				{isSubmitting ? 'Creating account...' : 'Create Account'}
 			</button>
 		</form>
 
-		<p class="auth-link">
-			Already have an account? <a href="/login">Sign in</a>
-		</p>
+		<div class="auth-footer">
+			<p>
+				Already have an account? <a href="/login">Sign in here</a>
+			</p>
+		</div>
 	</div>
 </div>
 
 <style>
-	.container {
-		padding: 2rem;
-		max-width: 500px;
-		margin: 0 auto;
-		display: flex;
-		justify-content: center;
-		align-items: center;
+	.auth-page {
 		min-height: calc(100vh - 200px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 2rem;
+		background: linear-gradient(135deg, #f9fafb 0%, #e5e7eb 100%);
 	}
 
-	.auth-card {
+	.auth-container {
 		background: white;
-		border-radius: 12px;
-		padding: 2.5rem;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+		border-radius: 16px;
+		padding: 3rem;
+		max-width: 480px;
 		width: 100%;
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+	}
+
+	.auth-header {
+		text-align: center;
+		margin-bottom: 2.5rem;
 	}
 
 	h1 {
-		margin: 0 0 0.5rem 0;
-		color: #333;
-		font-size: 2rem;
-		text-align: center;
+		margin: 0 0 0.75rem 0;
+		color: #1f2937;
+		font-size: 2.25rem;
+		font-weight: 800;
 	}
 
 	.subtitle {
-		color: #666;
-		text-align: center;
-		margin: 0 0 2rem 0;
-		font-size: 0.95rem;
+		color: #6b7280;
+		font-size: 1.05rem;
+		margin: 0;
+		line-height: 1.6;
 	}
 
-	form {
+	.auth-form {
 		display: flex;
 		flex-direction: column;
-		gap: 1.25rem;
+		gap: 1.5rem;
 	}
 
 	.form-group {
@@ -152,79 +161,112 @@
 
 	label {
 		color: #374151;
-		font-weight: 500;
+		font-weight: 600;
 		font-size: 0.95rem;
 	}
 
 	input {
-		padding: 0.75rem;
-		border: 1px solid #d1d5db;
-		border-radius: 6px;
+		padding: 0.875rem 1rem;
+		border: 2px solid #e5e7eb;
+		border-radius: 8px;
 		font-size: 1rem;
-		transition: border-color 0.2s;
+		transition: all 0.2s;
+		background: #f9fafb;
+	}
+
+	input:hover {
+		border-color: #d1d5db;
 	}
 
 	input:focus {
 		outline: none;
-		border-color: #2563eb;
-		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+		border-color: #667eea;
+		box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+		background: white;
 	}
 
-	.error {
-		color: #ef4444;
-		font-size: 0.9rem;
-		margin: 0;
-		padding: 0.75rem;
-		background: #fee;
-		border-radius: 6px;
-		text-align: center;
+	.alert {
+		padding: 0.875rem 1rem;
+		border-radius: 8px;
+		font-size: 0.95rem;
+		font-weight: 500;
 	}
 
-	.success {
-		color: #10b981;
-		font-size: 0.9rem;
-		margin: 0;
-		padding: 0.75rem;
+	.alert-error {
+		color: #991b1b;
+		background: #fee2e2;
+		border: 1px solid #fecaca;
+	}
+
+	.alert-success {
+		color: #065f46;
 		background: #d1fae5;
-		border-radius: 6px;
-		text-align: center;
+		border: 1px solid #a7f3d0;
 	}
 
 	.btn-primary {
-		background: #2563eb;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
 		border: none;
-		padding: 0.875rem;
-		border-radius: 6px;
+		padding: 1rem 2rem;
+		border-radius: 8px;
 		font-size: 1rem;
-		font-weight: 600;
+		font-weight: 700;
 		cursor: pointer;
-		transition: background 0.2s;
+		transition: all 0.3s;
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 	}
 
 	.btn-primary:hover:not(:disabled) {
-		background: #1d4ed8;
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 	}
 
 	.btn-primary:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
+		transform: none;
 	}
 
-	.auth-link {
-		margin: 1.5rem 0 0 0;
+	.btn-large {
+		padding: 1.125rem 2rem;
+		font-size: 1.05rem;
+	}
+
+	.auth-footer {
+		margin-top: 2rem;
 		text-align: center;
-		color: #666;
+	}
+
+	.auth-footer p {
+		margin: 0;
+		color: #6b7280;
 		font-size: 0.95rem;
 	}
 
-	.auth-link a {
-		color: #2563eb;
+	.auth-footer a {
+		color: #667eea;
 		text-decoration: none;
 		font-weight: 600;
+		transition: color 0.2s;
 	}
 
-	.auth-link a:hover {
+	.auth-footer a:hover {
+		color: #764ba2;
 		text-decoration: underline;
+	}
+
+	@media (max-width: 640px) {
+		.auth-container {
+			padding: 2rem 1.5rem;
+		}
+
+		h1 {
+			font-size: 1.875rem;
+		}
+
+		.subtitle {
+			font-size: 1rem;
+		}
 	}
 </style>

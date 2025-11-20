@@ -29,8 +29,8 @@
 </script>
 
 <svelte:head>
-	<title>Quiz Dashboard</title>
-	<meta name="description" content="View your quiz results" />
+	<title>Progress Dashboard - VocabMaster</title>
+	<meta name="description" content="Track your learning progress and quiz performance" />
 </svelte:head>
 
 <div class="container">
@@ -108,21 +108,25 @@
 
 <style>
 	.container {
-		padding: 2rem;
+		padding: 3rem 2rem;
 		max-width: 1200px;
 		margin: 0 auto;
+		min-height: calc(100vh - 200px);
 	}
 
 	h1 {
 		text-align: center;
-		color: #333;
-		margin-bottom: 2rem;
+		color: #1f2937;
+		font-size: 2.5rem;
+		font-weight: 800;
+		margin-bottom: 3rem;
 	}
 
 	h2 {
-		color: #333;
-		margin-bottom: 1.5rem;
-		font-size: 1.5rem;
+		color: #1f2937;
+		margin-bottom: 2rem;
+		font-size: 1.875rem;
+		font-weight: 700;
 	}
 
 	.stats-overview {
@@ -133,15 +137,21 @@
 	}
 
 	.stat-card {
-		background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
-		padding: 2rem;
-		border-radius: 12px;
+		padding: 2.5rem;
+		border-radius: 16px;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 0.5rem;
-		box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+		gap: 0.75rem;
+		box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+		transition: all 0.3s;
+	}
+
+	.stat-card:hover {
+		transform: translateY(-4px);
+		box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
 	}
 
 	.stat-label {
@@ -166,15 +176,17 @@
 
 	.result-card {
 		background: white;
-		border-radius: 12px;
-		padding: 1.5rem;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-		transition: transform 0.2s, box-shadow 0.2s;
+		border: 2px solid #e5e7eb;
+		border-radius: 16px;
+		padding: 2rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+		transition: all 0.3s;
 	}
 
 	.result-card:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+		transform: translateY(-4px);
+		box-shadow: 0 12px 24px rgba(102, 126, 234, 0.15);
+		border-color: #667eea;
 	}
 
 	.result-header {
@@ -188,8 +200,9 @@
 
 	.result-header h3 {
 		margin: 0;
-		color: #333;
+		color: #1f2937;
 		font-size: 1.25rem;
+		font-weight: 700;
 	}
 
 	.result-date {
@@ -277,18 +290,21 @@
 
 	.btn-primary {
 		display: inline-block;
-		background: #2563eb;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
 		border: none;
-		padding: 0.75rem 1.5rem;
-		border-radius: 6px;
+		padding: 0.875rem 1.75rem;
+		border-radius: 8px;
 		font-size: 1rem;
+		font-weight: 700;
 		text-decoration: none;
 		cursor: pointer;
-		transition: background 0.2s;
+		transition: all 0.3s;
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 	}
 
 	.btn-primary:hover {
-		background: #1d4ed8;
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 	}
 </style>
