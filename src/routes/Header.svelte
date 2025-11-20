@@ -77,7 +77,8 @@
 	}
 
 	.btn-login:hover {
-		background: #1d4ed8;
+		background: #ec4899;
+		color: white;
 	}
 
 	.btn-signout {
