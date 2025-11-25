@@ -2,9 +2,13 @@
 	import { supabase } from '$lib/supabase';
 	import { user } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
-	import { onDestroy } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import { getLocalCollections } from '$lib/localDB';
 
 	let { data } = $props();
+
+	let collections = $state(data.collections || []);
+	let isAuthenticated = $state(data.isAuthenticated);
 
 	let selectedCollection = $state(null);
 	let quizStarted = $state(false);
@@ -20,11 +24,26 @@
 	let timerInterval = null;
 	let quizStartTime = $state(null);
 
+	onMount(async () => {
+		if (!isAuthenticated) {
+			await loadLocalCollections();
+		}
+	});
+
 	onDestroy(() => {
 		if (timerInterval) {
 			clearInterval(timerInterval);
 		}
 	});
+
+	async function loadLocalCollections() {
+		try {
+			collections = await getLocalCollections();
+		} catch (error) {
+			console.error('Error loading local collections:', error);
+			collections = [];
+		}
+	}
 
 	function selectCollection(collection) {
 		selectedCollection = collection;
@@ -131,7 +150,7 @@
 	}
 
 	async function saveQuizResult(percentage, duration) {
-		if (!$user || !selectedCollection) return;
+		if (!isAuthenticated || !$user || !selectedCollection) return;
 
 		try {
 			const { error } = await supabase
@@ -205,9 +224,9 @@
 	{#if !selectedCollection}
 		<div class="collection-selection">
 			<h2>Select a Collection</h2>
-			{#if data?.collections && data.collections.length > 0}
+			{#if collections && collections.length > 0}
 				<div class="collections-grid">
-					{#each data.collections as collection}
+					{#each collections as collection}
 						<button class="collection-card" onclick={() => selectCollection(collection)}>
 							<h3>{collection.name}</h3>
 							<p class="word-count">

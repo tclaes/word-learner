@@ -1,9 +1,22 @@
 <script>
 	import { supabase } from '$lib/supabase';
+	import { user } from '$lib/stores/auth';
 	import { invalidateAll } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import {
+		getLocalCollections,
+		addLocalCollection,
+		updateLocalCollection,
+		deleteLocalCollection,
+		addLocalWords,
+		deleteLocalWords
+	} from '$lib/localDB';
 
 	/** @type {{data: any}} */
 	let { data } = $props();
+
+	let collections = $state(data.collections || []);
+	let isAuthenticated = $state(data.isAuthenticated);
 
 	let showModal = $state(false);
 	let showAddWordsModal = $state(false);
@@ -18,6 +31,21 @@
 	let collectionToDelete = $state(null);
 	let collectionToEdit = $state(null);
 	let editWords = $state([]);
+
+	onMount(async () => {
+		if (!isAuthenticated) {
+			await loadLocalCollections();
+		}
+	});
+
+	async function loadLocalCollections() {
+		try {
+			collections = await getLocalCollections();
+		} catch (error) {
+			console.error('Error loading local collections:', error);
+			collections = [];
+		}
+	}
 
 	function openModal() {
 		showModal = true;
@@ -76,34 +104,47 @@
 		isSubmitting = true;
 
 		try {
-			const { data: { user } } = await supabase.auth.getUser();
+			if (isAuthenticated) {
+				const { data: { user } } = await supabase.auth.getUser();
 
-			if (!user) {
-				errorMessage = 'You must be logged in to create collections';
-				return;
+				if (!user) {
+					errorMessage = 'You must be logged in to create collections';
+					return;
+				}
+
+				const { data: collection, error: collectionError } = await supabase
+					.from('collections')
+					.insert([{ name: collectionName.trim(), user_id: user.id }])
+					.select()
+					.single();
+
+				if (collectionError) throw collectionError;
+
+				const wordsToInsert = validWords.map(pair => ({
+					collection_id: collection.id,
+					dutch: pair.dutch.trim(),
+					translation: pair.translation.trim()
+				}));
+
+				const { error: wordsError } = await supabase
+					.from('words')
+					.insert(wordsToInsert);
+
+				if (wordsError) throw wordsError;
+
+				await invalidateAll();
+			} else {
+				const collection = await addLocalCollection(collectionName.trim());
+
+				const wordsToAdd = validWords.map(pair => ({
+					dutch: pair.dutch.trim(),
+					translation: pair.translation.trim()
+				}));
+
+				await addLocalWords(collection.id, wordsToAdd);
+				await loadLocalCollections();
 			}
 
-			const { data: collection, error: collectionError } = await supabase
-				.from('collections')
-				.insert([{ name: collectionName.trim(), user_id: user.id }])
-				.select()
-				.single();
-
-			if (collectionError) throw collectionError;
-
-			const wordsToInsert = validWords.map(pair => ({
-				collection_id: collection.id,
-				dutch: pair.dutch.trim(),
-				translation: pair.translation.trim()
-			}));
-
-			const { error: wordsError } = await supabase
-				.from('words')
-				.insert(wordsToInsert);
-
-			if (wordsError) throw wordsError;
-
-			await invalidateAll();
 			closeModal();
 		} catch (error) {
 			errorMessage = error.message || 'Failed to create collection';
@@ -130,19 +171,30 @@
 		isSubmitting = true;
 
 		try {
-			const wordsToInsert = validWords.map(pair => ({
-				collection_id: selectedCollectionForWords.id,
-				dutch: pair.dutch.trim(),
-				translation: pair.translation.trim()
-			}));
+			if (isAuthenticated) {
+				const wordsToInsert = validWords.map(pair => ({
+					collection_id: selectedCollectionForWords.id,
+					dutch: pair.dutch.trim(),
+					translation: pair.translation.trim()
+				}));
 
-			const { error: wordsError } = await supabase
-				.from('words')
-				.insert(wordsToInsert);
+				const { error: wordsError } = await supabase
+					.from('words')
+					.insert(wordsToInsert);
 
-			if (wordsError) throw wordsError;
+				if (wordsError) throw wordsError;
 
-			await invalidateAll();
+				await invalidateAll();
+			} else {
+				const wordsToAdd = validWords.map(pair => ({
+					dutch: pair.dutch.trim(),
+					translation: pair.translation.trim()
+				}));
+
+				await addLocalWords(selectedCollectionForWords.id, wordsToAdd);
+				await loadLocalCollections();
+			}
+
 			closeAddWordsModal();
 		} catch (error) {
 			errorMessage = error.message || 'Failed to add words';
@@ -168,14 +220,20 @@
 		errorMessage = '';
 
 		try {
-			const { error } = await supabase
-				.from('collections')
-				.delete()
-				.eq('id', collectionToDelete.id);
+			if (isAuthenticated) {
+				const { error } = await supabase
+					.from('collections')
+					.delete()
+					.eq('id', collectionToDelete.id);
 
-			if (error) throw error;
+				if (error) throw error;
 
-			await invalidateAll();
+				await invalidateAll();
+			} else {
+				await deleteLocalCollection(collectionToDelete.id);
+				await loadLocalCollections();
+			}
+
 			closeDeleteConfirm();
 		} catch (error) {
 			errorMessage = error.message || 'Failed to delete collection';
@@ -227,33 +285,47 @@
 		isSubmitting = true;
 
 		try {
-			const { error: updateError } = await supabase
-				.from('collections')
-				.update({ name: collectionName.trim() })
-				.eq('id', collectionToEdit.id);
+			if (isAuthenticated) {
+				const { error: updateError } = await supabase
+					.from('collections')
+					.update({ name: collectionName.trim() })
+					.eq('id', collectionToEdit.id);
 
-			if (updateError) throw updateError;
+				if (updateError) throw updateError;
 
-			const { error: deleteError } = await supabase
-				.from('words')
-				.delete()
-				.eq('collection_id', collectionToEdit.id);
+				const { error: deleteError } = await supabase
+					.from('words')
+					.delete()
+					.eq('collection_id', collectionToEdit.id);
 
-			if (deleteError) throw deleteError;
+				if (deleteError) throw deleteError;
 
-			const wordsToInsert = validWords.map(word => ({
-				collection_id: collectionToEdit.id,
-				dutch: word.dutch.trim(),
-				translation: word.translation.trim()
-			}));
+				const wordsToInsert = validWords.map(word => ({
+					collection_id: collectionToEdit.id,
+					dutch: word.dutch.trim(),
+					translation: word.translation.trim()
+				}));
 
-			const { error: insertError } = await supabase
-				.from('words')
-				.insert(wordsToInsert);
+				const { error: insertError } = await supabase
+					.from('words')
+					.insert(wordsToInsert);
 
-			if (insertError) throw insertError;
+				if (insertError) throw insertError;
 
-			await invalidateAll();
+				await invalidateAll();
+			} else {
+				await updateLocalCollection(collectionToEdit.id, collectionName.trim());
+				await deleteLocalWords(collectionToEdit.id);
+
+				const wordsToAdd = validWords.map(word => ({
+					dutch: word.dutch.trim(),
+					translation: word.translation.trim()
+				}));
+
+				await addLocalWords(collectionToEdit.id, wordsToAdd);
+				await loadLocalCollections();
+			}
+
 			closeEditModal();
 		} catch (error) {
 			errorMessage = error.message || 'Failed to update collection';
@@ -269,14 +341,29 @@
 </svelte:head>
 
 <div class="container">
+	{#if !isAuthenticated && collections.length > 0}
+		<div class="guest-banner">
+			<div class="banner-content">
+				<div class="banner-icon">💾</div>
+				<div class="banner-text">
+					<h3>Save Your Progress</h3>
+					<p>Create an account to sync your collections across devices and never lose your progress!</p>
+				</div>
+				<div class="banner-actions">
+					<a href="/register" class="btn-banner">Sign Up Free</a>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<div class="header">
 		<h1>Collections</h1>
 		<button class="btn-primary" onclick={openModal}>Add Collection</button>
 	</div>
 
-	{#if data?.collections && data.collections.length > 0}
+	{#if collections && collections.length > 0}
 		<div class="collections-grid">
-			{#each data.collections as collection}
+			{#each collections as collection}
 				<div class="collection-card">
 					<div class="card-header">
 						<h2>{collection.name}</h2>
@@ -955,5 +1042,83 @@
 		color: #ef4444;
 		font-size: 0.875rem;
 		margin-top: 0.5rem;
+	}
+
+	.guest-banner {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		border-radius: 16px;
+		padding: 2rem;
+		margin-bottom: 2rem;
+		box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+	}
+
+	.banner-content {
+		display: flex;
+		align-items: center;
+		gap: 1.5rem;
+		flex-wrap: wrap;
+	}
+
+	.banner-icon {
+		font-size: 3rem;
+		flex-shrink: 0;
+	}
+
+	.banner-text {
+		flex: 1;
+		min-width: 250px;
+	}
+
+	.banner-text h3 {
+		margin: 0 0 0.5rem 0;
+		color: white;
+		font-size: 1.5rem;
+		font-weight: 700;
+	}
+
+	.banner-text p {
+		margin: 0;
+		color: rgba(255, 255, 255, 0.95);
+		font-size: 1rem;
+		line-height: 1.6;
+	}
+
+	.banner-actions {
+		flex-shrink: 0;
+	}
+
+	.btn-banner {
+		display: inline-block;
+		background: white;
+		color: #667eea;
+		border: none;
+		padding: 0.875rem 1.75rem;
+		border-radius: 8px;
+		font-size: 1rem;
+		font-weight: 700;
+		text-decoration: none;
+		cursor: pointer;
+		transition: all 0.3s;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+	}
+
+	.btn-banner:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+	}
+
+	@media (max-width: 768px) {
+		.banner-content {
+			flex-direction: column;
+			text-align: center;
+		}
+
+		.banner-actions {
+			width: 100%;
+		}
+
+		.btn-banner {
+			width: 100%;
+		}
 	}
 </style>
