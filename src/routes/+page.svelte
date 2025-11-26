@@ -1,8 +1,79 @@
 <script>
 	import { user } from '$lib/stores/auth';
+	import { goto } from '$app/navigation';
+	import { addLocalCollection, addLocalWords } from '$lib/localDB';
 
 	/** @type {{data: any}} */
 	let { data } = $props();
+
+	let showQuickCreate = $state(false);
+	let collectionName = $state('');
+	let wordPairs = $state([
+		{ dutch: '', translation: '' },
+		{ dutch: '', translation: '' },
+		{ dutch: '', translation: '' }
+	]);
+	let isCreating = $state(false);
+	let errorMessage = $state('');
+
+	function openQuickCreate() {
+		showQuickCreate = true;
+		collectionName = '';
+		wordPairs = [
+			{ dutch: '', translation: '' },
+			{ dutch: '', translation: '' },
+			{ dutch: '', translation: '' }
+		];
+		errorMessage = '';
+	}
+
+	function closeQuickCreate() {
+		showQuickCreate = false;
+	}
+
+	function addWordPair() {
+		wordPairs = [...wordPairs, { dutch: '', translation: '' }];
+	}
+
+	function removeWordPair(index) {
+		wordPairs = wordPairs.filter((_, i) => i !== index);
+	}
+
+	async function handleQuickCreate() {
+		errorMessage = '';
+
+		if (!collectionName.trim()) {
+			errorMessage = 'Please enter a collection name';
+			return;
+		}
+
+		const validWords = wordPairs.filter(pair => pair.dutch.trim() && pair.translation.trim());
+
+		if (validWords.length === 0) {
+			errorMessage = 'Please add at least one word pair';
+			return;
+		}
+
+		isCreating = true;
+
+		try {
+			const collection = await addLocalCollection(collectionName.trim());
+
+			const wordsToAdd = validWords.map(pair => ({
+				dutch: pair.dutch.trim(),
+				translation: pair.translation.trim()
+			}));
+
+			await addLocalWords(collection.id, wordsToAdd);
+
+			closeQuickCreate();
+			goto('/collections');
+		} catch (error) {
+			errorMessage = error.message || 'Failed to create collection';
+		} finally {
+			isCreating = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -39,6 +110,77 @@
 		{/if}
 	</div>
 </section>
+
+<section class="quick-start">
+	<div class="quick-start-content">
+		<h2 class="section-title">Try It Now – No Account Needed</h2>
+		<p class="quick-start-subtitle">Create your first vocabulary collection and start practicing in seconds</p>
+
+		<button class="btn-quick-start" onclick={openQuickCreate}>
+			<span class="btn-icon">✨</span>
+			Create Your First Collection
+		</button>
+
+		<p class="quick-start-note">Your collection will be saved locally. Sign up later to sync across devices.</p>
+	</div>
+</section>
+
+{#if showQuickCreate}
+	<div class="modal-overlay" onclick={closeQuickCreate} role="button" tabindex="0">
+		<div class="modal" onclick={(e) => e.stopPropagation()} role="dialog">
+			<div class="modal-header">
+				<h2>Create Your Collection</h2>
+				<button class="close-btn" onclick={closeQuickCreate}>✕</button>
+			</div>
+
+			<form onsubmit={(e) => { e.preventDefault(); handleQuickCreate(); }}>
+				<div class="form-group">
+					<label for="collection-name">Collection Name</label>
+					<input
+						id="collection-name"
+						type="text"
+						bind:value={collectionName}
+						placeholder="e.g., Basic Spanish Verbs"
+						required
+					/>
+				</div>
+
+				<div class="form-group">
+					<label>Word Pairs</label>
+					{#each wordPairs as pair, index}
+						<div class="word-pair">
+							<input
+								type="text"
+								bind:value={pair.dutch}
+								placeholder="Word (e.g., hello)"
+							/>
+							<input
+								type="text"
+								bind:value={pair.translation}
+								placeholder="Translation (e.g., hola)"
+							/>
+							{#if wordPairs.length > 1}
+								<button type="button" class="btn-remove" onclick={() => removeWordPair(index)}>✕</button>
+							{/if}
+						</div>
+					{/each}
+					<button type="button" class="btn-add-word" onclick={addWordPair}>+ Add Another Word</button>
+				</div>
+
+				{#if errorMessage}
+					<p class="error">{errorMessage}</p>
+				{/if}
+
+				<div class="modal-actions">
+					<button type="button" class="btn-secondary" onclick={closeQuickCreate}>Cancel</button>
+					<button type="submit" class="btn-primary" disabled={isCreating}>
+						{isCreating ? 'Creating...' : 'Create & Start Practicing'}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
 
 <section class="features">
 	<h2 class="section-title">Why Language Learners Love VocabMaster</h2>
@@ -410,6 +552,263 @@
 		color: rgba(255, 255, 255, 0.9);
 	}
 
+	.quick-start {
+		background: white;
+		text-align: center;
+		padding: 5rem 2rem;
+		border-top: 1px solid #e5e7eb;
+		border-bottom: 1px solid #e5e7eb;
+	}
+
+	.quick-start-content {
+		max-width: 700px;
+		margin: 0 auto;
+	}
+
+	.quick-start-subtitle {
+		font-size: 1.1rem;
+		color: #6b7280;
+		margin-bottom: 2.5rem;
+		line-height: 1.6;
+	}
+
+	.btn-quick-start {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		padding: 1.25rem 2.5rem;
+		border-radius: 50px;
+		font-size: 1.15rem;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 0.3s;
+		box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+		display: inline-flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.btn-quick-start:hover {
+		transform: translateY(-3px);
+		box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
+	}
+
+	.btn-icon {
+		font-size: 1.5rem;
+	}
+
+	.quick-start-note {
+		margin-top: 1.5rem;
+		font-size: 0.95rem;
+		color: #9ca3af;
+		font-style: italic;
+	}
+
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		z-index: 1000;
+		backdrop-filter: blur(4px);
+	}
+
+	.modal {
+		background: white;
+		border-radius: 16px;
+		padding: 2.5rem;
+		max-width: 600px;
+		width: 90%;
+		max-height: 90vh;
+		overflow-y: auto;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+	}
+
+	.modal-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 2rem;
+	}
+
+	.modal-header h2 {
+		margin: 0;
+		color: #1f2937;
+		font-size: 1.75rem;
+		font-weight: 700;
+	}
+
+	.close-btn {
+		background: none;
+		border: none;
+		font-size: 1.5rem;
+		color: #6b7280;
+		cursor: pointer;
+		padding: 0.25rem 0.5rem;
+		transition: color 0.2s;
+	}
+
+	.close-btn:hover {
+		color: #1f2937;
+	}
+
+	.form-group {
+		margin-bottom: 1.5rem;
+	}
+
+	.form-group label {
+		display: block;
+		margin-bottom: 0.5rem;
+		color: #374151;
+		font-weight: 600;
+		font-size: 0.95rem;
+	}
+
+	.form-group input {
+		width: 100%;
+		padding: 0.875rem 1rem;
+		border: 2px solid #e5e7eb;
+		border-radius: 8px;
+		font-size: 1rem;
+		box-sizing: border-box;
+		background: #f9fafb;
+		transition: all 0.2s;
+	}
+
+	.form-group input:hover {
+		border-color: #d1d5db;
+	}
+
+	.form-group input:focus {
+		outline: none;
+		border-color: #667eea;
+		box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+		background: white;
+	}
+
+	.word-pair {
+		display: grid;
+		grid-template-columns: 1fr 1fr auto;
+		gap: 0.75rem;
+		margin-bottom: 0.75rem;
+		align-items: center;
+	}
+
+	.word-pair input {
+		padding: 0.875rem 1rem;
+		border: 2px solid #e5e7eb;
+		border-radius: 8px;
+		font-size: 0.9rem;
+		background: #f9fafb;
+		transition: all 0.2s;
+	}
+
+	.word-pair input:hover {
+		border-color: #d1d5db;
+	}
+
+	.word-pair input:focus {
+		outline: none;
+		border-color: #667eea;
+		box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+		background: white;
+	}
+
+	.btn-remove {
+		background: #ef4444;
+		color: white;
+		border: none;
+		padding: 0.5rem;
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 1rem;
+		width: 40px;
+		height: 40px;
+		transition: all 0.2s;
+	}
+
+	.btn-remove:hover {
+		background: #dc2626;
+	}
+
+	.btn-add-word {
+		background: #f3f4f6;
+		color: #667eea;
+		border: 2px dashed #d1d5db;
+		padding: 0.75rem 1.5rem;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 0.95rem;
+		font-weight: 600;
+		width: 100%;
+		transition: all 0.2s;
+		margin-top: 0.5rem;
+	}
+
+	.btn-add-word:hover {
+		background: #e5e7eb;
+		border-color: #667eea;
+	}
+
+	.modal-actions {
+		display: flex;
+		gap: 1rem;
+		justify-content: flex-end;
+		margin-top: 2rem;
+	}
+
+	.modal-actions .btn-primary {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		padding: 0.875rem 1.75rem;
+		border-radius: 8px;
+		font-size: 1rem;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 0.3s;
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+	}
+
+	.modal-actions .btn-primary:hover:not(:disabled) {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+	}
+
+	.modal-actions .btn-primary:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+		transform: none;
+	}
+
+	.modal-actions .btn-secondary {
+		background: #f3f4f6;
+		color: #374151;
+		border: 2px solid #e5e7eb;
+		padding: 0.75rem 1.5rem;
+		border-radius: 8px;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.modal-actions .btn-secondary:hover {
+		background: #e5e7eb;
+		border-color: #d1d5db;
+	}
+
+	.error {
+		color: #ef4444;
+		font-size: 0.875rem;
+		margin-top: 0.5rem;
+	}
+
 	@media (max-width: 768px) {
 		.hero-title {
 			font-size: 2.5rem;
@@ -440,6 +839,26 @@
 
 		section {
 			padding: 3rem 1.5rem;
+		}
+
+		.word-pair {
+			grid-template-columns: 1fr;
+		}
+
+		.btn-remove {
+			width: 100%;
+		}
+
+		.modal {
+			padding: 1.5rem;
+		}
+
+		.modal-actions {
+			flex-direction: column;
+		}
+
+		.modal-actions button {
+			width: 100%;
 		}
 	}
 </style>
